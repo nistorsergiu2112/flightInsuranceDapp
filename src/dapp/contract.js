@@ -40,6 +40,31 @@ export default class Contract {
             .call({ from: self.owner}, callback);
     }
 
+    registerAirline(airline, callback) {
+        const self = this;
+        self.flightSuretyApp.methods
+            .registerAirline(airline)
+            .send({ from: self.owner}
+                ).then((receipt) => {
+                    console.log(receipt);
+                    if (callback) {
+                        callback()
+                    };
+                });
+    }
+
+    fundAirline(amount, callback) {
+        const self = this;
+        self.flightSuretyApp.methods.fundAirline().send(
+            {from: self.owner, value: web3.utils.toWei(amount, 'ether')}
+            ).then((receipt) => {
+                console.log(receipt);
+                if (callback) {
+                    callback()
+                };
+            });
+    }
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {
