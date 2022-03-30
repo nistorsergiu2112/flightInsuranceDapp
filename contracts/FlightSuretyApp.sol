@@ -11,7 +11,7 @@ interface FlightSuretyData {
     function isOperational() external view returns (bool);
     function setOperatingStatus(bool mode) external;
     function registerAirline(address existingAirline, address newAirline) external;
-    function fundAirline(address payable airline, uint256 amount) external payable returns(bool); 
+    function fundAirline(address airline, uint256 amount) external returns(bool); 
     function getRegisteredAirlineCount() external view returns(uint256);
     function getAirlineIsRegistered(address airline) external view returns(bool);
     function getAirlineIsFunded(address airline) external view returns(bool);
@@ -95,6 +95,11 @@ contract FlightSuretyApp {
         _;
     }
 
+    modifier requireHasSufficientFunds(uint256 amount) {
+        require(msg.value >= amount, "Insufficient Funds");
+        _;
+    }
+
     /********************************************************************************************/
     /*                                       CONSTRUCTOR                                        */
     /********************************************************************************************/
@@ -156,10 +161,12 @@ contract FlightSuretyApp {
         external 
         payable 
         requireIsOperational
+        requireHasSufficientFunds(AIRLINE_REGISTRATION_FEE)
         returns(bool)
     {
         if (flightSuretyData.getAirlineIsRegistered(msg.sender)) {
-            return flightSuretyData.fundAirline(payable(msg.sender), AIRLINE_REGISTRATION_FEE);
+            payable(msg.sender).transfer(AIRLINE_REGISTRATION_FEE);
+            return flightSuretyData.fundAirline(msg.sender, AIRLINE_REGISTRATION_FEE);
         } else {
             return false;
         }

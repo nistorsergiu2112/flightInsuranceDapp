@@ -31,9 +31,11 @@ contract FlightSuretyData {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor(address firstAirlineAddress) {
+    constructor() {
         contractOwner = msg.sender;
-        airlines[firstAirlineAddress] = Airline(true, false, 0);
+        airlines[msg.sender] = Airline(true, false, 0);
+        registeredAirlineCount = registeredAirlineCount.add(1);
+        emit AirlineRegistration(msg.sender);
     }
 
     event AirlineRegistration(address airline);
@@ -132,18 +134,16 @@ contract FlightSuretyData {
         emit AirlineRegistration(newAirline);
     }
 
-    function fundAirline(address payable airline, uint256 amount) 
+    function fundAirline(address airline, uint256 amount) 
         external
-        payable
         requireIsOperational
         requireAirlineIsRegistered(airline)
-        requireHasEnoughFunds(amount)
         returns(bool)
     {
         airlines[airline].isFunded = true;
         airlines[airline].funds = airlines[airline].funds.add(amount);
         fundedAirlineCount = fundedAirlineCount.add(1);
-        airline.transfer(amount);
+        // airline.transfer(amount);
         emit AirlineFunding(airline);
         return airlines[airline].isFunded;
     }
@@ -174,6 +174,19 @@ contract FlightSuretyData {
     {
         return true;
     }
+
+    function getAirlineRegisteredCount() external view requireIsOperational returns(uint256){
+        return registeredAirlineCount;
+    }
+
+    function getAirlineFundedCount() external view requireIsOperational returns(uint256){
+        return fundedAirlineCount;
+    }
+
+    function getAllAirlineInfo(address airline) external view requireIsOperational returns (Airline memory) {
+         return airlines[airline];
+    }
+
 
 
 
