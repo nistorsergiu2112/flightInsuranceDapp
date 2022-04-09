@@ -65,6 +65,18 @@ export default class Contract {
             });
     }
 
+    registerFlight(flightNumber, callback) {
+        const self = this;
+        const timestamp = Date.now();
+        self.flightSuretyApp.methods.registerFlight(flightNumber, timestamp)
+            .send({from: this.account}).then((receipt) => {
+                console.log(receipt);
+                if (callback) {
+                    callback()
+                };
+            });
+    }
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {

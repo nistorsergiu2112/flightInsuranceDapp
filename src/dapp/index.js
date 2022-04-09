@@ -35,6 +35,10 @@ import './flightsurety.css';
             const amount = DOM.elid('funding-amount').value;
             contract.fundAirline(amount);
         });
+        DOM.elid('register-flight').addEventListener('click', async() => {
+            let flightNumber = DOM.elid('flight-number').value;
+            contract.registerFlight(flightNumber);
+        });
     
     });
     

@@ -9,7 +9,7 @@ contract FlightSuretyData {
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    address private contractOwner; // Account used to deploy contract
+    address public contractOwner; // Account used to deploy contract
     bool private operational = true; // Blocks all state changes throughout the contract if false
 
 
@@ -19,9 +19,22 @@ contract FlightSuretyData {
         uint256 funds;
     }
 
+    struct Flight {
+        bool isRegistered;
+        uint8 statusCode;
+        uint256 updatedTimestamp;
+        address airline;
+        string flightNumber;
+    }
+
     uint256 registeredAirlineCount = 0;
+    uint256 registeredFlightsCount = 0;
     uint256 fundedAirlineCount = 0;
+
+    bytes32[] public registeredFlights;
+
     mapping(address => Airline) private airlines;
+    mapping(bytes32 => Flight) public flights;
 
     /********************************************************************************************/
     /*                                       EVENT DEFINITIONS                                  */
@@ -31,15 +44,15 @@ contract FlightSuretyData {
      * @dev Constructor
      *      The deploying account becomes contractOwner
      */
-    constructor() {
+    constructor(address firstAirline) public payable {
         contractOwner = msg.sender;
-        airlines[msg.sender] = Airline(true, false, 0);
+        airlines[firstAirline] = Airline(true, false, 0);
         registeredAirlineCount = registeredAirlineCount.add(1);
-        emit AirlineRegistration(msg.sender);
     }
 
     event AirlineRegistration(address airline);
     event AirlineFunding(address airline);
+    event FlightRegistration(bytes32 flightKey);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -88,6 +101,11 @@ contract FlightSuretyData {
 
     modifier requireHasEnoughFunds(uint256 desiredFunds) {
         require(msg.value >= desiredFunds, "Sender has insuficient funds");
+        _;
+    }
+
+    modifier requireFlightIsRegistered(bytes32 flightKey) {
+        require(flights[flightKey].isRegistered, "Flight is not registered");
         _;
     }
 
@@ -148,31 +166,57 @@ contract FlightSuretyData {
         return airlines[airline].isFunded;
     }
 
-    function getRegisteredAirlineCount() public view requireIsOperational returns(uint256) {
-        return registeredAirlineCount;
+    function registerFlight(
+        bytes32 flightKey,
+        uint256 timestamp,
+        address airline,
+        string memory flightNumber
+    ) 
+        external
+        payable
+        requireIsOperational
+        requireAirlineIsFunded(airline)
+        requireFlightIsRegistered(flightKey)
+    {
+        flights[flightKey] = Flight(true, 0, timestamp, airline, flightNumber);
+        registeredFlights.push(flightKey);
+        registeredFlightsCount = registeredFlightsCount.add(1);
+        emit FlightRegistration(flightKey);
     }
 
 
     // Getter functions for App contract to access this modifiers
 
+    function getRegisteredAirlineCount() public view requireIsOperational returns(uint256) {
+        return registeredAirlineCount;
+    }
+
+    function getContractOwner() public view returns(address) {
+        return contractOwner;
+    }
+
+    function getFlightIsRegistered(bytes32 flightKey) external view returns(bool) {
+        return flights[flightKey].isRegistered;
+    }
+
+    function getFlightRegisteredCount() external view returns(uint256) {
+        return registeredFlightsCount;
+    }
+
     function getAirlineIsRegistered(address airline) 
         external
         view
-        requireIsOperational
-        requireAirlineIsRegistered(airline)
         returns(bool)
     {
-        return true;
+        return airlines[airline].isRegistered;
     }
 
     function getAirlineIsFunded(address airline) 
         external
         view
-        requireIsOperational
-        requireAirlineIsFunded(airline)
         returns(bool)
     {
-        return true;
+        return airlines[airline].isFunded;
     }
 
     function getAirlineRegisteredCount() external view requireIsOperational returns(uint256){
@@ -183,9 +227,17 @@ contract FlightSuretyData {
         return fundedAirlineCount;
     }
 
-    function getAllAirlineInfo(address airline) external view requireIsOperational returns (Airline memory) {
-         return airlines[airline];
+    function getAirlineInfo(address airline) external view returns(Airline memory) {
+        return airlines[airline];
     }
+
+    // function getAllAirlineInfo(address airline) external view requireIsOperational returns(address[] memory) {
+    //     address[] memory newMemory = [];
+    //     for (uint i = 0; i< registeredAirlineCount; i++) {
+    //         newMemory.push(airlines[i]);
+    //     }
+    //     return newMemory;
+    // }
 
 
 
@@ -220,7 +272,7 @@ contract FlightSuretyData {
         address airline,
         string memory flight,
         uint256 timestamp
-    ) internal pure returns (bytes32) {
+    ) external pure returns (bytes32) {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
