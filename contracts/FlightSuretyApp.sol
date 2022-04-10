@@ -53,6 +53,7 @@ contract FlightSuretyApp {
     uint256 PASSENGER_MAX_INSURANCE_PRICE = 1 ether;
 
     address private contractOwner; // Account used to deploy contract
+    bool private operational = true;
 
     // Airline status for multi-party voting
     struct PendingAirline {
@@ -130,8 +131,12 @@ contract FlightSuretyApp {
     /*                                       UTILITY FUNCTIONS                                  */
     /********************************************************************************************/
 
-    function isOperational() public pure returns (bool) {
-        return true; // Modify to call data contract's status
+    function isOperational() public view returns (bool) {
+        return operational; // Modify to call data contract's status
+    }
+
+    function setOperationalStatus(bool mode) external requireContractOwner {
+        operational = mode;
     }
 
     /********************************************************************************************/

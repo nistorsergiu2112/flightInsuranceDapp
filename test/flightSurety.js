@@ -1,5 +1,6 @@
 
 const Test = require('../config/testConfig.js');
+const BigNumber = require('big-number');
 const Web3 = require('web3');
 
 contract('Flight Surety Tests', async (accounts) => {
@@ -139,7 +140,7 @@ contract('Flight Surety Tests', async (accounts) => {
         let result = await config.flightSuretyData.getFlightRegisteredCount.call();
 
         // ASSERT
-        assert.equal(result, 1, "Airline is not registering flights correctly");
+        assert.notEqual(BigNumber(result), 0, "Airline is not registering flights correctly");
     });
 
 

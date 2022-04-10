@@ -34,17 +34,25 @@ export default class Contract {
     }
 
     isOperational(callback) {
-       let self = this;
+       const self = this;
        self.flightSuretyApp.methods
             .isOperational()
             .call({ from: self.owner}, callback);
+    }
+
+    setOperatingStatus(mode, callback) {
+        const self = this;
+        self.flightSuretyApp.methods
+            .setOperatingStatus(mode)
+            .send({from:self.owner})
+                .then(console.log);
     }
 
     registerAirline(airline, callback) {
         const self = this;
         self.flightSuretyApp.methods
             .registerAirline(airline)
-            .send({ from: self.owner}
+            .send({from: self.owner}
                 ).then((receipt) => {
                     console.log(receipt);
                     if (callback) {
@@ -77,6 +85,19 @@ export default class Contract {
             });
     }
 
+    async getRegisteredFlights() {
+        const self = this;
+        const registeredFlightsNumber = parseInt(await self.flightSuretyData.methods.getFlightRegisteredCount().call());
+        self.flights = [];
+
+        for (let i = 0; i < registeredFlightsNumber; i++) {
+            const flightKey = await self.flightSuretyData.methods.registeredFlights(i).call();
+            const flight = await self.flightSuretyData.methods.flights(flightKey).call();
+            self.flights.push(flight)
+        }
+        return self.flights;
+    }
+
     purchaseFlightInsurance(flightKey, amount) {
         const self = this;
         self.flightSuretyApp.methods.purchaseFlightInsurance(flightKey)
@@ -87,6 +108,21 @@ export default class Contract {
                     callback()
                 };
             });
+    }
+
+    checkBalance(callback) {
+        const self = this;
+        self.flightSuretyData.methods.availableCredit(this.account).call(callback);
+    }
+
+    getFlightInformation(flightKey) {
+        const self = this;
+        self.flightSuretyData.methods.flights(flightKey).call().then(console.log);
+    }
+
+    withdrawFunds(callback) {
+        const self = this;
+        self.flightSuretyApp.methods.withdrawInsuranceFunds().send({from: this.account}, callback);
     }
 
     fetchFlightStatus(flight, callback) {
