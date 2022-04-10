@@ -14,17 +14,17 @@ interface FlightSuretyData {
     function registerFlight(bytes32 flightKey, uint256 timestamp, address airline, string memory flightNumber) external payable;
     function fundAirline(address airline, uint256 amount) external returns(bool); 
     function getRegisteredAirlineCount() external view returns(uint256);
+    function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) external view returns(bool);
+    function purchaseFlightInsurance(address passager, bytes32 flightKey, uint256 amount) external;
     function getAirlineIsRegistered(address airline) external view returns(bool);
+    function getFlightIsRegistered(bytes32 flightKey) external view returns(bool);
     function getAirlineIsFunded(address airline) external view returns(bool);
+    function processFlightStatus(address airline, string calldata flight, uint256 timestamp, uint8 statusCode) external;
+    function emitCreditsToInsuree(address insuree) external payable;
     function buy() external payable;
     function creditInsurees() external pure;
     function pay() external pure;
     function fund() external payable;
-    function getFlightKey(
-        address airline,
-        string memory flight,
-        uint256 timestamp
-    ) external pure returns (bytes32);
 }
 
 /************************************************** */
@@ -95,6 +95,21 @@ contract FlightSuretyApp {
     
     modifier requireIsAirlineFunded(address airline) {
         require(flightSuretyData.getAirlineIsFunded(airline), "Airline is not funded.");
+        _;
+    }
+
+    modifier requireIsFlightRegistered(bytes32 flightKey) {
+        require(flightSuretyData.getFlightIsRegistered(flightKey), "Flight is not registered");
+        _;
+    }
+
+    modifier requirePassengerNotInsuredForFlight(address passenger, bytes32 flightKey) {
+        require(!flightSuretyData.isPassengerInsuredForFlight(flightKey, passenger), "Passenger is already insured");
+        _;
+    }
+
+    modifier requireLessThanMaxInsurance() {
+        require(PASSENGER_MAX_INSURANCE_PRICE >= msg.value, "Insurance value exceeds maximum allowed");
         _;
     }
 
@@ -189,6 +204,27 @@ contract FlightSuretyApp {
         flightSuretyData.registerFlight(flightKey, timestamp, registeringAirline, flightNumber);
     }
 
+    function purchaseFlightInsurance(
+        bytes32 flightKey
+    )
+        external
+        payable
+        requireIsOperational
+        requireIsFlightRegistered(flightKey)
+        requirePassengerNotInsuredForFlight(msg.sender, flightKey)
+        requireLessThanMaxInsurance()
+
+    {
+        address passengerToBeInsured = msg.sender;
+        uint256 insuranceAmount = msg.value;
+        payable(passengerToBeInsured).transfer(insuranceAmount);
+        flightSuretyData.purchaseFlightInsurance(passengerToBeInsured, flightKey, insuranceAmount);
+    }
+
+    function withdrawInsuranceFunds() external requireIsOperational {
+        flightSuretyData.emitCreditsToInsuree(msg.sender);
+    }
+
     /**
      * @dev Called after oracle has updated flight status
      *
@@ -198,7 +234,9 @@ contract FlightSuretyApp {
         string memory flight,
         uint256 timestamp,
         uint8 statusCode
-    ) internal pure {}
+    ) internal requireIsOperational {
+        flightSuretyData.processFlightStatus(airline, flight, timestamp, statusCode);
+    }
 
     // Generate a request for oracles to fetch flight information
     function fetchFlightStatus(

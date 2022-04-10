@@ -39,6 +39,11 @@ import './flightsurety.css';
             let flightNumber = DOM.elid('flight-number').value;
             contract.registerFlight(flightNumber);
         });
+
+        function purchaseFlightInsurance(flightKey, amount) {
+            console.log("Buy Insurance: " + amount);
+            contract.purchaseFlightInsurance(flightKey, amount);
+        }
     
     });
     

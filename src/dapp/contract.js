@@ -77,6 +77,18 @@ export default class Contract {
             });
     }
 
+    purchaseFlightInsurance(flightKey, amount) {
+        const self = this;
+        self.flightSuretyApp.methods.purchaseFlightInsurance(flightKey)
+            .send({from: this.account, value: this.web3.utils.toWei(amount, 'ether')})
+            .then((receipt) => {
+                console.log(receipt);
+                if (callback) {
+                    callback()
+                };
+            });
+    }
+
     fetchFlightStatus(flight, callback) {
         let self = this;
         let payload = {
