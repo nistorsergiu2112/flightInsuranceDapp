@@ -1,6 +1,7 @@
 # FlightSurety
 
-FlightSurety is a sample application project for Udacity's Blockchain course.
+Flight Insurance App with a ReactJs Front End.
+App is currently in development
 
 ## Install
 
