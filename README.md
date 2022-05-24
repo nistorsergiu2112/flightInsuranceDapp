@@ -1,6 +1,6 @@
 # FlightSurety
 
-Flight Insurance App with a ReactJs Front End.
+Flight Insurance App made using Solidity, Truffle Suite, OpenZeppeling and ReactJs on the Front-end
 App is currently in development
 
 ## Install
