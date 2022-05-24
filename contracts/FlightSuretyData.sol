@@ -15,6 +15,7 @@ contract FlightSuretyData {
 
     struct Airline {
         bool isRegistered;
+        string name;
         bool isFunded;
         uint256 funds;
     }
@@ -56,7 +57,7 @@ contract FlightSuretyData {
      */
     constructor(address firstAirline) payable {
         contractOwner = msg.sender;
-        airlines[firstAirline] = Airline(true, false, 0);
+        airlines[firstAirline] = Airline(true, 'owner airline',false, 0);
         registeredAirlineCount = registeredAirlineCount.add(1);
     }
 
@@ -67,6 +68,7 @@ contract FlightSuretyData {
     event ProcessFlightStatus(bytes32 flightKey, uint8 statusCode);
     event PassengerCredited(bytes32 flightKey, address passenger, uint256 amount);
     event PassengerPaid(address passenger, uint256 amount);
+    event AirlineModifyName(address airline, string name);
 
     /********************************************************************************************/
     /*                                       FUNCTION MODIFIERS                                 */
@@ -161,17 +163,28 @@ contract FlightSuretyData {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    // HELPER FUNCTIONS FOR DEVELOPMENT ONLY
+
+    function getContractBalance() external view requireContractOwner returns(uint){
+        uint balance = address(this).balance;
+        return balance;
+    }
+
+    function modifyAirlineName(address airlineAddress, string calldata name) external requireContractOwner requireAirlineIsRegistered(airlineAddress) {
+        airlines[airlineAddress].name = name;
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *      Can only be called from FlightSuretyApp contract
      *
      */
-    function registerAirline(address existingAirline, address newAirline) 
+    function registerAirline(address existingAirline, address newAirline, string calldata name) 
     external 
     requireIsOperational
     requireAirlineIsFunded(existingAirline)
     requireAirlineIsNotRegistered(newAirline)  {
-        airlines[newAirline] = Airline(true, false, 0);
+        airlines[newAirline] = Airline(true, name, false, 0);
         registeredAirlineCount = registeredAirlineCount.add(1);
         emit AirlineRegistration(newAirline);
     }
@@ -309,10 +322,6 @@ contract FlightSuretyData {
         return fundedAirlineCount;
     }
 
-    function getAirlineInfo(address airline) external view returns(Airline memory) {
-        return airlines[airline];
-    }
-
     function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) external view returns(bool) {
         InsuranceClaim[] memory insuranceClaims = flightInsuranceClaims[flightKey];
         for (uint256 i = 0; i < insuranceClaims.length; i++) {
@@ -322,14 +331,6 @@ contract FlightSuretyData {
         }
         return false;
     }
-
-    // function getAllAirlineInfo(address airline) external view requireIsOperational returns(address[] memory) {
-    //     address[] memory newMemory = [];
-    //     for (uint i = 0; i< registeredAirlineCount; i++) {
-    //         newMemory.push(airlines[i]);
-    //     }
-    //     return newMemory;
-    // }
 
 
 

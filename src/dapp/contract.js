@@ -1,4 +1,5 @@
 import FlightSuretyApp from '../../build/contracts/FlightSuretyApp.json';
+import FlightSuretyData from '../../build/contracts/FlightSuretyData.json';
 import Config from './config.json';
 import Web3 from 'web3';
 
@@ -8,6 +9,7 @@ export default class Contract {
         let config = Config[network];
         this.web3 = new Web3(new Web3.providers.HttpProvider(config.url));
         this.flightSuretyApp = new this.web3.eth.Contract(FlightSuretyApp.abi, config.appAddress);
+        this.flightSuretyData = new this.web3.eth.Contract(FlightSuretyData.abi, config.dataAddress);
         this.initialize(callback);
         this.owner = null;
         this.airlines = [];
@@ -48,10 +50,10 @@ export default class Contract {
                 .then(console.log);
     }
 
-    registerAirline(airline, callback) {
+    registerAirline(airline, name, callback) {
         const self = this;
         self.flightSuretyApp.methods
-            .registerAirline(airline)
+            .registerAirline(airline, name)
             .send({from: self.owner}
                 ).then((receipt) => {
                     console.log(receipt);
@@ -59,6 +61,33 @@ export default class Contract {
                         callback()
                     };
                 });
+    }
+
+    modifyAirlineName(airline, name, callback) {
+        const self = this;
+        self.flightSuretyApp.methods
+        .modifyAirlineName(airline, name)
+        .send({from: self.owner}
+            ).then((receipt) => {
+                console.log(receipt);
+                if (callback) {
+                    callback()
+                };
+            });
+    }
+
+    getAirlineInfo(airline, callback) {
+        const self = this;
+        console.log('get airline info from contract ---', airline);
+        self.flightSuretyApp.methods
+        .getAirlineInfoTest()
+        .send({from: self.owner}
+            ).then((receipt) => {
+                console.log(receipt);
+                if (callback) {
+                    callback()
+                };
+            });
     }
 
     fundAirline(amount, callback) {

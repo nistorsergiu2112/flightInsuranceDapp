@@ -10,7 +10,8 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 interface FlightSuretyData {
     function isOperational() external view returns (bool);
     function setOperatingStatus(bool mode) external;
-    function registerAirline(address existingAirline, address newAirline) external;
+    function registerAirline(address existingAirline, address newAirline, string calldata name) external;
+    function modifyAirlineName(address airlineAddress, string calldata name) external;
     function registerFlight(bytes32 flightKey, uint256 timestamp, address airline, string memory flightNumber) external payable;
     function fundAirline(address airline, uint256 amount) external returns(bool); 
     function getRegisteredAirlineCount() external view returns(uint256);
@@ -143,18 +144,24 @@ contract FlightSuretyApp {
     /*                                     SMART CONTRACT FUNCTIONS                             */
     /********************************************************************************************/
 
+    // HELPER FUNCTION FOR DEVELOPMENT ONLY
+
+    function modifyAirlineName(address airline, string calldata name) external {
+        return flightSuretyData.modifyAirlineName(airline, name);
+    }
+
     /**
      * @dev Add an airline to the registration queue
      *
      */
-    function registerAirline(address airlineAddress)
+    function registerAirline(address airlineAddress, string calldata name)
         external
         requireIsOperational
         requireIsAirlineFunded(msg.sender)
         returns (bool success, uint256 votes)
     {
         if (flightSuretyData.getRegisteredAirlineCount() <= AIRLINE_VOTING_MINIMUM) {
-            flightSuretyData.registerAirline(msg.sender, airlineAddress);
+            flightSuretyData.registerAirline(msg.sender, airlineAddress, name);
             return(success, 0);
         } else {
             bool isDuplicate = false;
@@ -168,7 +175,7 @@ contract FlightSuretyApp {
             pendingAirlines[airlineAddress].push(msg.sender);
             // escape condition if there are enough votes
             if (pendingAirlines[airlineAddress].length >= flightSuretyData.getRegisteredAirlineCount().div(2)) {
-                flightSuretyData.registerAirline(msg.sender, airlineAddress);
+                flightSuretyData.registerAirline(msg.sender, airlineAddress, name);
                 return(true, pendingAirlines[airlineAddress].length);
             }
             return(false, pendingAirlines[airlineAddress].length);
