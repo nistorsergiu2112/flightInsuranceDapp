@@ -117,19 +117,19 @@ contract('Flight Surety Tests', async (accounts) => {
     //     assert.notEqual(BigNumber(result), 0, "Airline is not registering flights correctly");
     // });
 
-    it('getting airline info', async () => {
-        // ACT
-        try {
-            const testtt = await debug(config.flightSuretyApp.getAirlineInfo.call("0xf17f52151EbEF6C7334FAD080c5704D77216b732"));
-        }
-        catch (e) {
-        }
+    // it('getting airline info', async () => {
+    //     // ACT
+    //     try {
+    //         const testtt = await debug(config.flightSuretyApp.getAirlineInfo.call("0xf17f52151EbEF6C7334FAD080c5704D77216b732"));
+    //     }
+    //     catch (e) {
+    //     }
 
-        console.log('test', testtt);
+    //     console.log('test', testtt);
 
-        // ASSERT
-        assert.notEqual(testtt, undefined, "test succeded because there is info");
-    });
+    //     // ASSERT
+    //     assert.notEqual(testtt, undefined, "test succeded because there is info");
+    // });
 
 
 });

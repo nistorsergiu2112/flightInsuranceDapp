@@ -2,35 +2,16 @@ import React from "react";
 import Form from 'react-bootstrap/Form';
 import Button from 'react-bootstrap/Button';
 
-// DOM.elid('register-airline').addEventListener('click', () => {
-//     let airline = DOM.elid('airline-address').value;
-//     if (airline) {
-//         contract.registerAirline(airline);
-//     }
-// });
-
-// DOM.elid('fund-airline').addEventListener('click', () => {
-//     let amount = DOM.elid('funding-amount').value;
-//     contract.fundAirline(amount);
-// });
-
-// DOM.elid('register-flight').addEventListener('click', async() => {
-//     let flightNumber = DOM.elid('flight-number').value;
-//     let departureLocation = DOM.elid('departure-location').value;
-//     let arrivalLocation = DOM.elid('arrival-location').value;
-//     contract.registerFlight(flightNumber, departureLocation, arrivalLocation);
-// });
-
 export default class AirlineView extends React.Component {
     state = {
         formAirlineRegistration: "",
         formAirlineRegistrationName: "",
-        formAirlineFund: "",
         formFlightName: "",
         formFlightNumber: "",
         modifyAirlineAddress: "",
         modifyAirlineName: "",
         airlineInfoAddress: "",
+        airlinesFetched: [],
         test: ""
     }
 
@@ -40,25 +21,27 @@ export default class AirlineView extends React.Component {
         const { formAirlineRegistration, formAirlineRegistrationName } = this.state;
 
         console.log('registerAirline');
-        await contract.registerAirline(formAirlineRegistration, formAirlineRegistrationName);
+        contract.registerAirline(formAirlineRegistration, formAirlineRegistrationName);
+        contract.flightSuretyData.methods.registeredAirlineCount().call().then(function(result){console.log(result)})
     }
 
     fundAirline = async (e) => {
         e.preventDefault();
-        const { contract } = this.props;
-        const { formAirlineFunding } = this.state;
+        const { contract, connectedAccount } = this.props;
 
         console.log('fundAirline');
-        await contract.fundAirline(formAirlineFunding);
+        contract.fundAirline(10);
+        contract.flightSuretyData.methods.airlines(connectedAccount).call().then(function(result){console.log(result)})
     }
 
     registerFlight = async (e) => {
         e.preventDefault();
-        const { contract } = this.props;
+        const { contract, connectedAccount } = this.props;
         const { formFlightName, formFlightNumber } = this.state;
 
         console.log('registerFlight');
-        await contract.registerFlight(formFlightNumber);
+        contract.registerFlight(formFlightNumber, formFlightName);
+        contract.flightSuretyData.methods.airlines(connectedAccount).call().then(function(result){console.log(result)})
     }
 
     modifyAirlineName = async (e) => {
@@ -68,7 +51,8 @@ export default class AirlineView extends React.Component {
 
         console.log('modifyAirlineName');
 
-        await contract.modifyAirlineName(modifyAirlineAddress, modifyAirlineName)
+        contract.modifyAirlineName(modifyAirlineAddress, modifyAirlineName)
+        contract.flightSuretyData.methods.airlines(modifyAirlineAddress).call().then(function(result){console.log(result)})
     }
 
     getAirlineInfo = async (e) => {
@@ -76,21 +60,22 @@ export default class AirlineView extends React.Component {
         const { contract } = this.props;
         const {airlineInfoAddress} = this.state;
 
+        console.log('airlines', airlineInfoAddress);
+
         contract.flightSuretyData.methods.airlines(airlineInfoAddress).call().then(function(result){console.log(result)})
-
-        // console.log('getAirlineInfo', contract.flightSuretyData.airlines.call());
-
-        // contract.getAirlineInfo(airlineInfoAddress, (res) => { console.log('airline info -> ', res); });
-        // const test = await contract.getAirlineInfo(airlineInfoAddress);
-        // console.log('teeeest', test);
     }
 
     render() {
         // const { registeredAirlines } = this.state;
+        const { connectedAccount, contract } = this.props;
+
+        console.log('connectedAccount', connectedAccount);
+        console.log('contract', contract);
+
         return (
             <div>
                 <h1>This is the Airline View</h1>
-                <Form>
+                <Form onSubmit={this.registerAirline}>
                     <Form.Group className="mb-3">
                         <Form.Label htmlFor="register-airline">Register Airline</Form.Label>
                         <Form.Control
@@ -108,22 +93,18 @@ export default class AirlineView extends React.Component {
                         <Form.Text id="airline-register-address" muted>
                             Add the address of the airline you want to Register
                         </Form.Text>
-                        <Button variant="primary" type="submit" onClick={async () => await this.registerAirline()}>
+                        <Button variant="primary" type="submit">
                             Submit Airline Registration
                         </Button>
                     </Form.Group>
+                </Form>
+                <Form onSubmit={this.fundAirline}>
                     <Form.Group className="mb-3">
-                        <Form.Label htmlFor="fund-airline">Fund Registered Airline</Form.Label>
-                        <Form.Control
-                            type="number"
-                            id="fund-airline"
-                            aria-describedby="airline-fund-amount"
-                            onChange={e => this.setState({ formAirlineRegistration: e.target.value })}
-                        />
+                        <Form.Label htmlFor="fund-airline">Fund Your Registered Airline</Form.Label>
                         <Form.Text id="airline-fund-amount" muted>
-                            Type the amount of funds you wish to add in ether ( min 10 ETH)
+                            You need to have 10 eth in balance
                         </Form.Text>
-                        <Button variant="primary" type="submit" onClick={async () => await this.fundAirline()}>
+                        <Button variant="primary" type="submit">
                             Submit Funding
                         </Button>
                     </Form.Group>
@@ -196,8 +177,6 @@ export default class AirlineView extends React.Component {
                         </Button>
                     </Form.Group>
                 </Form>
-                <h2>The following airline have been registered</h2>
-                {this.props.contract.airlines.map((airline, index) => <div key={index}>{airline}</div>)}
             </div>
         )
     }

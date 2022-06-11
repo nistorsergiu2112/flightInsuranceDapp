@@ -21,6 +21,7 @@ contract FlightSuretyData {
     }
 
     struct Flight {
+        string name;
         bool isRegistered;
         uint8 statusCode;
         uint256 updatedTimestamp;
@@ -35,14 +36,12 @@ contract FlightSuretyData {
     }
 
     // counters
-    uint256 registeredAirlineCount = 0;
-    uint256 registeredFlightsCount = 0;
-    uint256 fundedAirlineCount = 0;
-    uint256 insuranceClaimsCount = 0;
+    uint256 public registeredAirlineCount;
+    uint256 public registeredFlightsCount;
+    uint256 public fundedAirlineCount;
+    uint256 public insuranceClaimsCount;
 
-    bytes32[] public registeredFlights;
-
-    mapping(address => Airline) private airlines;
+    mapping(address => Airline) public airlines;
     mapping(bytes32 => Flight) public flights;
     mapping(bytes32 => InsuranceClaim[]) public flightInsuranceClaims;
     mapping(address => uint256) public availableCredit;
@@ -170,8 +169,9 @@ contract FlightSuretyData {
         return balance;
     }
 
-    function modifyAirlineName(address airlineAddress, string calldata name) external requireContractOwner requireAirlineIsRegistered(airlineAddress) {
+    function modifyAirlineName(address airlineAddress, string calldata name) external requireAirlineIsRegistered(airlineAddress) {
         airlines[airlineAddress].name = name;
+        emit AirlineModifyName(airlineAddress, name);
     }
 
     /**
@@ -193,14 +193,11 @@ contract FlightSuretyData {
         external
         requireIsOperational
         requireAirlineIsRegistered(airline)
-        returns(bool)
     {
         airlines[airline].isFunded = true;
         airlines[airline].funds = airlines[airline].funds.add(amount);
         fundedAirlineCount = fundedAirlineCount.add(1);
-        // airline.transfer(amount);
         emit AirlineFunding(airline);
-        return airlines[airline].isFunded;
     }
 
     function purchaseFlightInsurance(
@@ -214,7 +211,6 @@ contract FlightSuretyData {
         requireFlightIsRegistered(flightKey)
     {
         flightInsuranceClaims[flightKey].push(InsuranceClaim(passenger, amount, false));
-        insuranceClaimsCount = insuranceClaimsCount.add(1);
         emit PassengerInsurance(passenger, flightKey, amount);
     }
 
@@ -222,16 +218,15 @@ contract FlightSuretyData {
         bytes32 flightKey,
         uint256 timestamp,
         address airline,
-        string memory flightNumber
+        string calldata flightNumber,
+        string calldata flightName
     ) 
         external
         payable
         requireIsOperational
         requireAirlineIsFunded(airline)
-        requireFlightIsNotRegistered(flightKey)
     {
-        flights[flightKey] = Flight(true, 0, timestamp, airline, flightNumber);
-        registeredFlights.push(flightKey);
+        flights[flightKey] = Flight(flightName, true, 0, timestamp, airline, flightNumber);
         registeredFlightsCount = registeredFlightsCount.add(1);
         emit FlightRegistration(flightKey);
     }
@@ -314,13 +309,13 @@ contract FlightSuretyData {
         return airlines[airline].isFunded;
     }
 
-    function getAirlineRegisteredCount() external view requireIsOperational returns(uint256){
-        return registeredAirlineCount;
-    }
+    // function getAirlineRegisteredCount() external view requireIsOperational returns(uint256){
+    //     return registeredAirlineCount;
+    // }
 
-    function getAirlineFundedCount() external view requireIsOperational returns(uint256){
-        return fundedAirlineCount;
-    }
+    // function getAirlineFundedCount() external view requireIsOperational returns(uint256){
+    //     return fundedAirlineCount;
+    // }
 
     function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) external view returns(bool) {
         InsuranceClaim[] memory insuranceClaims = flightInsuranceClaims[flightKey];
@@ -373,5 +368,6 @@ contract FlightSuretyData {
      * @dev Fallback function for funding smart contract.
      *
      */
+    receive() external payable {}
     fallback() external payable {}
 }

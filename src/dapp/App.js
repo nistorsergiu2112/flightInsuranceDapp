@@ -8,40 +8,38 @@ import "./App.css";
 
 class App extends Component {
   state = {
-    view: "guest",
-    flights: []
+    view: "guest"
   };
 
   componentDidMount = async () => {
     try {
       const contract = new Contract('localhost', () => {});
 
-      const flights = await contract.getRegisteredFlights();
       this.setState({ 
         web3: contract.web3, 
         accounts: contract.accounts,
         contractApp: contract.flightSuretyApp,
         contract,
-        flights
+        connectedAccount: contract.connectedAccount
       });
     } catch (error) {
       // Catch any errors for any of the above operations.
-      alert(
-        `Failed to load web3, accounts, or contract. Check console for details.`,
-      );
+      // alert(
+      //   `Failed to load web3, accounts, or contract. Check console for details.`,
+      // );
       console.error(error);
     }
   };
 
   viewComponent = () => {
-    const { view, flights, contract } = this.state;
+    const { view, contract, connectedAccount } = this.state;
 
     if (view === "guest") {
       return <GuestView />;
     } else if (view === "airline") {
-      return <AirlineView contract={contract} />;
+      return <AirlineView contract={contract} connectedAccount={connectedAccount}/>;
     } else {
-      return <PassengerView flights={flights} />;
+      return <PassengerView contract={contract} connectedAccount={connectedAccount} />;
     }
   }
 

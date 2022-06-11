@@ -30,6 +30,7 @@
     "superstatic": "6.0.3"
   },
   "dependencies": {
+    "@babel/polyfill": "^7.12.1",
     "@babel/preset-env": "^7.16.11",
     "@ethereumjs/block": "^3.6.1",
     "@ethereumjs/common": "^2.6.2",
