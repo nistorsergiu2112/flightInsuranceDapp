@@ -12,11 +12,11 @@ Flight Insurance App made using Solidity, Truffle Suite, OpenZeppeling and React
 ## Install
 
 You need to following versions in order to run this app:
-`Truffle v5.5.3 (core: 5.5.3)
-Ganache v7.0.1
-Solidity - ^0.8.3 (solc-js)
-Node v16.14.0
-Web3.js v1.5.3`
+- `Truffle v5.5.3 (core: 5.5.3)`
+- `Ganache v7.0.1`
+- `Solidity - ^0.8.3 (solc-js)`
+- `Node v16.14.0`
+- `Web3.js v1.5.3`
 
 To install, download or clone the repo, then:
 
