@@ -9,7 +9,7 @@ interface FlightSuretyData {
     function registerAirline(address existingAirline, address newAirline, string calldata name) external;
     function modifyAirlineName(address airlineAddress, string calldata name) external;
     function registerFlight(bytes32 flightKey, uint256 timestamp, address airline, string calldata flightNumber, string calldata name) external payable;
-    function fundAirline(address airline, uint256 amount) external; 
+    function fundAirline(address airline, uint256 amount) external returns(bool); 
     function getRegisteredAirlineCount() external view returns(uint256);
     function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) external view returns(bool);
     function purchaseFlightInsurance(address passager, bytes32 flightKey, uint256 amount) external;
@@ -36,7 +36,7 @@ contract FlightSuretyApp {
 
     FlightSuretyData flightSuretyData;
 
-    // Flight status codees
+    // Flight status codes
     uint8 private constant STATUS_CODE_UNKNOWN = 0;
     uint8 private constant STATUS_CODE_ON_TIME = 10;
     uint8 private constant STATUS_CODE_LATE_AIRLINE = 20;
@@ -45,12 +45,12 @@ contract FlightSuretyApp {
     uint8 private constant STATUS_CODE_LATE_OTHER = 50;
 
 
-    uint256 AIRLINE_REGISTRATION_FEE = 2 ether;
+    uint256 AIRLINE_REGISTRATION_FEE = 10 ether;
     uint256 AIRLINE_VOTING_MINIMUM = 4;
     uint256 PASSENGER_MAX_INSURANCE_PRICE = 1 ether;
 
-    address private contractOwner; // Account used to deploy contract
-    bool private operational = true;
+    address public contractOwner; // Account used to deploy contract
+    bool public operational = true;
 
     // Airline status for multi-party voting
     struct PendingAirline {
@@ -74,7 +74,7 @@ contract FlightSuretyApp {
      */
     modifier requireIsOperational() {
         // Modify to call data contract's status
-        require(true, "Contract is currently not operational");
+        require(operational, "Contract is currently not operational");
         _; // All modifiers require an "_" which indicates where the function body will be added
     }
 
@@ -183,10 +183,11 @@ contract FlightSuretyApp {
         payable 
         requireIsOperational
         requireHasSufficientFunds(AIRLINE_REGISTRATION_FEE)
+        returns(bool)
     {
         if (flightSuretyData.getAirlineIsRegistered(msg.sender)) {
-            payable(address(flightSuretyData)).transfer(msg.value);
-            flightSuretyData.fundAirline(msg.sender, msg.value);
+            payable(address(flightSuretyData)).transfer(AIRLINE_REGISTRATION_FEE);
+            return flightSuretyData.fundAirline(msg.sender, AIRLINE_REGISTRATION_FEE);
         }
     }
 
@@ -254,8 +255,9 @@ contract FlightSuretyApp {
         bytes32 key = keccak256(
             abi.encodePacked(index, airline, flight, timestamp)
         );
-        oracleResponses[key].requester = msg.sender;
-        oracleResponses[key].isOpen = true;
+        ResponseInfo storage newOracleResponse = oracleResponses[key];
+        newOracleResponse.requester = msg.sender;
+        newOracleResponse.isOpen = true;
 
         emit OracleRequest(index, airline, flight, timestamp);
     }

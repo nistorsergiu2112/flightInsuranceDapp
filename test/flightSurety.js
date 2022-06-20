@@ -69,67 +69,51 @@ contract('Flight Surety Tests', async (accounts) => {
 
     });
 
-    // it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
-    //     let newAirline = accounts[2];
+    it('(airline) cannot register an Airline using registerAirline() if it is not funded', async () => {
+        let newAirline = accounts[2];
 
-    //     // ACT
-    //     try {
-    //         await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
-    //     }
-    //     catch (e) {
-    //     }
-    //     let result = await config.flightSuretyData.getAirlineIsRegistered.call(newAirline);
+        // ACT
+        try {
+            await config.flightSuretyApp.registerAirline(newAirline, { from: config.firstAirline });
+        }
+        catch (e) {
+        }
+        let result = await config.flightSuretyData.getAirlineIsRegistered.call(newAirline);
 
-    //     // ASSERT
-    //     assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
+        // ASSERT
+        assert.equal(result, false, "Airline should not be able to register another airline if it hasn't provided funding");
 
-    // });
+    });
 
-    // it('(airline) can fund itself using fundAirline()', async () => {
-    //     // ARRANGE
-    //     let amount = web3.utils.toWei('1', 'ether');
-    //     let result = false;
+    it('(airline) can fund itself using fundAirline()', async () => {
+        // ARRANGE
+        let amount = web3.utils.toWei('1', 'ether');
+        let result = false;
     
-    //     // ACT
-    //     try {
-    //         result = await config.flightSuretyApp.fundAirline.call({from: config.firstAirline, value: amount});
-    //     }
-    //     catch(e) {
-    //         console.log(e);
-    //     }
+        // ACT
+        try {
+            result = await config.flightSuretyApp.fundAirline.call({from: config.firstAirline, value: amount});
+        }
+        catch(e) {
+            console.log(e);
+        }
         
-    //     // ASSERT
-    //     assert.equal(result, true, "Airline is not funded.");
-    // });
+        // ASSERT
+        assert.equal(result, true, "Airline is not funded.");
+    });
 
-    // it('(flight) an Airline can register a flight', async () => {
-    //     // ACT
-    //     try {
-    //         await config.flightSuretyApp.fundAirline({from: config.firstAirline, value: web3.utils.toWei('1', 'ether')});
-    //         await config.flightSuretyApp.registerFlight('1', '10 september', { from: config.firstAirline });
-    //     }
-    //     catch (e) {
-    //     }
+    it('(flight) an Airline can register a flight', async () => {
+        // ACT
+        try {
+            await config.flightSuretyApp.fundAirline({from: config.firstAirline, value: web3.utils.toWei('1', 'ether')});
+            await config.flightSuretyApp.registerFlight('1', '10 september', { from: config.firstAirline });
+        }
+        catch (e) {
+        }
     
-    //     let result = await config.flightSuretyData.getFlightRegisteredCount.call();
+        let result = await config.flightSuretyData.getFlightRegisteredCount.call();
 
-    //     // ASSERT
-    //     assert.notEqual(BigNumber(result), 0, "Airline is not registering flights correctly");
-    // });
-
-    // it('getting airline info', async () => {
-    //     // ACT
-    //     try {
-    //         const testtt = await debug(config.flightSuretyApp.getAirlineInfo.call("0xf17f52151EbEF6C7334FAD080c5704D77216b732"));
-    //     }
-    //     catch (e) {
-    //     }
-
-    //     console.log('test', testtt);
-
-    //     // ASSERT
-    //     assert.notEqual(testtt, undefined, "test succeded because there is info");
-    // });
-
-
+        // ASSERT
+        assert.notEqual(BigNumber(result), 0, "Airline is not registering flights correctly");
+    });
 });

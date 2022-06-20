@@ -1,16 +1,16 @@
 pragma solidity ^0.8.3;
 
-import "@openzeppelin/contracts/utils/math/SafeMath.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 contract FlightSuretyData {
-    using SafeMath for uint256;
+    using Counters for Counters.Counter;
 
     /********************************************************************************************/
     /*                                       DATA VARIABLES                                     */
     /********************************************************************************************/
 
-    address public contractOwner; // Account used to deploy contract
-    bool private operational = true; // Blocks all state changes throughout the contract if false
+    address public contractOwner;
+    bool private operational = true;
 
 
     struct Airline {
@@ -36,10 +36,11 @@ contract FlightSuretyData {
     }
 
     // counters
-    uint256 public registeredAirlineCount;
-    uint256 public registeredFlightsCount;
-    uint256 public fundedAirlineCount;
-    uint256 public insuranceClaimsCount;
+    Counters.Counter public registeredAirlineCount;
+    Counters.Counter public fundedAirlineCount;
+    Counters.Counter public insuranceClaimsCount;
+
+    bytes32[] public registeredFlights;
 
     mapping(address => Airline) public airlines;
     mapping(bytes32 => Flight) public flights;
@@ -57,7 +58,7 @@ contract FlightSuretyData {
     constructor(address firstAirline) payable {
         contractOwner = msg.sender;
         airlines[firstAirline] = Airline(true, 'owner airline',false, 0);
-        registeredAirlineCount = registeredAirlineCount.add(1);
+        registeredAirlineCount.increment();
     }
 
     event AirlineRegistration(address airline);
@@ -73,22 +74,11 @@ contract FlightSuretyData {
     /*                                       FUNCTION MODIFIERS                                 */
     /********************************************************************************************/
 
-    // Modifiers help avoid duplication of code. They are typically used to validate something
-    // before a function is allowed to be executed.
-
-    /**
-     * @dev Modifier that requires the "operational" boolean variable to be "true"
-     *      This is used on all state changing functions to pause the contract in
-     *      the event there is an issue that needs to be fixed
-     */
     modifier requireIsOperational() {
         require(operational, "Contract is currently not operational");
-        _; // All modifiers require an "_" which indicates where the function body will be added
+        _;
     }
 
-    /**
-     * @dev Modifier that requires the "ContractOwner" account to be the function caller
-     */
     modifier requireContractOwner() {
         require(msg.sender == contractOwner, "Caller is not contract owner");
         _;
@@ -135,34 +125,13 @@ contract FlightSuretyData {
     }
 
 
-
-    /********************************************************************************************/
-    /*                                       UTILITY FUNCTIONS                                  */
-    /********************************************************************************************/
-
-    /**
-     * @dev Get operating status of contract
-     *
-     * @return A bool that is the current operating status
-     */
     function isOperational() public view returns (bool) {
         return operational;
     }
 
-    /**
-     * @dev Sets contract operations on/off
-     *
-     * When operational mode is disabled, all write transactions except for this one will fail
-     */
     function setOperatingStatus(bool mode) external requireContractOwner {
         operational = mode;
     }
-
-    /********************************************************************************************/
-    /*                                     SMART CONTRACT FUNCTIONS                             */
-    /********************************************************************************************/
-
-    // HELPER FUNCTIONS FOR DEVELOPMENT ONLY
 
     function getContractBalance() external view requireContractOwner returns(uint){
         uint balance = address(this).balance;
@@ -174,18 +143,13 @@ contract FlightSuretyData {
         emit AirlineModifyName(airlineAddress, name);
     }
 
-    /**
-     * @dev Add an airline to the registration queue
-     *      Can only be called from FlightSuretyApp contract
-     *
-     */
     function registerAirline(address existingAirline, address newAirline, string calldata name) 
     external 
     requireIsOperational
     requireAirlineIsFunded(existingAirline)
     requireAirlineIsNotRegistered(newAirline)  {
         airlines[newAirline] = Airline(true, name, false, 0);
-        registeredAirlineCount = registeredAirlineCount.add(1);
+        registeredAirlineCount.increment();
         emit AirlineRegistration(newAirline);
     }
 
@@ -193,11 +157,13 @@ contract FlightSuretyData {
         external
         requireIsOperational
         requireAirlineIsRegistered(airline)
+        returns(bool)
     {
         airlines[airline].isFunded = true;
-        airlines[airline].funds = airlines[airline].funds.add(amount);
-        fundedAirlineCount = fundedAirlineCount.add(1);
+        airlines[airline].funds = airlines[airline].funds + amount;
+        fundedAirlineCount.increment();
         emit AirlineFunding(airline);
+        return true;
     }
 
     function purchaseFlightInsurance(
@@ -227,7 +193,7 @@ contract FlightSuretyData {
         requireAirlineIsFunded(airline)
     {
         flights[flightKey] = Flight(flightName, true, 0, timestamp, airline, flightNumber);
-        registeredFlightsCount = registeredFlightsCount.add(1);
+        registeredFlights.push(flightKey);
         emit FlightRegistration(flightKey);
     }
 
@@ -241,11 +207,9 @@ contract FlightSuretyData {
         requireIsOperational
     {
         bytes32 flightKey = getFlightKey(airline, flight, timestamp);
-        if (flights[flightKey].statusCode == 0) {
-            flights[flightKey].statusCode = statusCode;
-            if (statusCode == 20) {
-                creditInsuredPassengers(flightKey);
-            }
+        flights[flightKey].statusCode = statusCode;
+        if (statusCode == 20) {
+            creditInsuredPassengers(flightKey);
         }
         emit ProcessFlightStatus(flightKey, statusCode);
     }
@@ -254,8 +218,8 @@ contract FlightSuretyData {
         for (uint256 i = 0; i < flightInsuranceClaims[flightKey].length; i++) {
             InsuranceClaim memory insuranceClaim = flightInsuranceClaims[flightKey][i];
             insuranceClaim.claimed = true;
-            uint256 amount = insuranceClaim.puchaseAmount.mul(150).div(100);
-            availableCredit[insuranceClaim.passenger] = availableCredit[insuranceClaim.passenger].add(amount);
+            uint256 amount = (insuranceClaim.puchaseAmount * 150) / 100;
+            availableCredit[insuranceClaim.passenger] = availableCredit[insuranceClaim.passenger] + amount;
             emit PassengerCredited(flightKey, insuranceClaim.passenger, amount);
         }
     }
@@ -278,7 +242,7 @@ contract FlightSuretyData {
     // Getter functions for App contract to access this modifiers
 
     function getRegisteredAirlineCount() public view requireIsOperational returns(uint256) {
-        return registeredAirlineCount;
+        return registeredAirlineCount.current();
     }
 
     function getContractOwner() public view returns(address) {
@@ -287,10 +251,6 @@ contract FlightSuretyData {
 
     function getFlightIsRegistered(bytes32 flightKey) external view returns(bool) {
         return flights[flightKey].isRegistered;
-    }
-
-    function getFlightRegisteredCount() external view returns(uint256) {
-        return registeredFlightsCount;
     }
 
     function getAirlineIsRegistered(address airline) 
@@ -309,13 +269,9 @@ contract FlightSuretyData {
         return airlines[airline].isFunded;
     }
 
-    // function getAirlineRegisteredCount() external view requireIsOperational returns(uint256){
-    //     return registeredAirlineCount;
-    // }
-
-    // function getAirlineFundedCount() external view requireIsOperational returns(uint256){
-    //     return fundedAirlineCount;
-    // }
+    function getRegisteredFlightsCount() public view requireIsOperational returns(uint256) {
+        return registeredFlights.length;
+    }
 
     function isPassengerInsuredForFlight(bytes32 flightKey, address passenger) external view returns(bool) {
         InsuranceClaim[] memory insuranceClaims = flightInsuranceClaims[flightKey];
@@ -327,35 +283,6 @@ contract FlightSuretyData {
         return false;
     }
 
-
-
-
-    // /**
-    //  * @dev Buy insurance for a flight
-    //  *
-    //  */
-    // function buy() external payable {}
-
-    // /**
-    //  *  @dev Credits payouts to insurees
-    //  */
-    // function creditInsurees() external pure {}
-
-    // /**
-    //  *  @dev Transfers eligible payout funds to insuree
-    //  *
-    //  */
-    // function pay() external pure {}
-
-    // /**
-    //  * @dev Initial funding for the insurance. Unless there are too many delayed flights
-    //  *      resulting in insurance payouts, the contract should be self-sustaining
-    //  *
-    //  */
-    // function fund() public payable {
-        
-    // }
-
     function getFlightKey(
         address airline,
         string memory flight,
@@ -364,10 +291,6 @@ contract FlightSuretyData {
         return keccak256(abi.encodePacked(airline, flight, timestamp));
     }
 
-    /**
-     * @dev Fallback function for funding smart contract.
-     *
-     */
     receive() external payable {}
     fallback() external payable {}
 }

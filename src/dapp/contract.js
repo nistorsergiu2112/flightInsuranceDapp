@@ -59,7 +59,7 @@ export default class Contract {
         const self = this;
         self.flightSuretyApp.methods
             .registerAirline(airline, name)
-            .send({from: self.connectedAccount}
+            .send({from: self.connectedAccount, gas: 1000000}
                 ).then((receipt) => {
                     console.log(receipt);
                     if (callback) {
@@ -81,10 +81,10 @@ export default class Contract {
             });
     }
 
-    fundAirline(amount, callback) {
+    fundAirline(callback) {
         const self = this;
         self.flightSuretyApp.methods.fundAirline().send(
-            {from: self.connectedAccount, value: this.web3.utils.toBN(this.web3.utils.toWei("2", "ether"))}
+            {from: self.connectedAccount, gas: 1000000 ,value: this.web3.utils.toBN(this.web3.utils.toWei("10", "ether"))}
             ).then((receipt) => {
                 console.log(receipt);
                 if (callback) {
@@ -98,7 +98,7 @@ export default class Contract {
         const timestamp = Math.floor(Date.now() / 1000);
         const providerAccount = self.connectedAccount || self.owner;
         self.flightSuretyApp.methods.registerFlight(flightNumber, timestamp, name)
-            .send({from: providerAccount}).then((receipt) => {
+            .send({from: providerAccount, gas: 1000000}).then((receipt) => {
                 console.log(receipt);
                 if (callback) {
                     callback()
@@ -108,21 +108,22 @@ export default class Contract {
 
     async getRegisteredFlights() {
         const self = this;
-        const registeredFlightsNumber = parseInt(await self.flightSuretyData.methods.getFlightRegisteredCount());
+        const registeredFlightsNumber = parseInt(await self.flightSuretyData.methods.getRegisteredFlightsCount().call());
         self.flights = [];
 
         for (let i = 0; i < registeredFlightsNumber; i++) {
             const flightKey = await self.flightSuretyData.methods.registeredFlights(i).call();
-            const flight = await self.flightSuretyData.methods.flights(flightKey).call();
+            let flight = await self.flightSuretyData.methods.flights(flightKey).call();
+            flight.flightKey = flightKey;
             self.flights.push(flight)
         }
         return self.flights;
     }
 
-    purchaseFlightInsurance(flightKey, amount) {
+    purchaseFlightInsurance(flightKey, amount, callback) {
         const self = this;
         self.flightSuretyApp.methods.purchaseFlightInsurance(flightKey)
-            .send({from: self.connectedAccount, value: this.web3.utils.toBN(this.web3.utils.toWei(amount, "ether"))})
+            .send({from: self.connectedAccount, gas: 1000000, value: this.web3.utils.toBN(this.web3.utils.toWei(amount, "ether"))})
             .then((receipt) => {
                 console.log(receipt);
                 if (callback) {
@@ -143,20 +144,17 @@ export default class Contract {
 
     withdrawFunds(callback) {
         const self = this;
-        self.flightSuretyApp.methods.withdrawInsuranceFunds().send({from: self.connectedAccount}, callback);
+        self.flightSuretyApp.methods.withdrawInsuranceFunds().send({from: self.connectedAccount, gas: 1000000});
     }
 
-    fetchFlightStatus(flight, callback) {
+    fetchFlightStatus(airline, flight, timestamp, callback) {
         let self = this;
-        let payload = {
-            airline: self.airlines[0],
-            flight: flight,
-            timestamp: Math.floor(Date.now() / 1000)
-        } 
         self.flightSuretyApp.methods
-            .fetchFlightStatus(payload.airline, payload.flight, payload.timestamp)
-            .send({ from: self.owner}, (error, result) => {
-                callback(error, payload);
+            .fetchFlightStatus(airline, flight, timestamp)
+            .send({ from: self.owner, gas: 1000000}, (error, result) => {
+                if (callback) {
+                    callback(error);
+                }
             });
     }
 }

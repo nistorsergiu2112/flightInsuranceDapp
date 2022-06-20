@@ -4,7 +4,8 @@ import AirlineView from "./components/airlineView";
 import PassengerView from "./components/PassengerView";
 import GuestView from "./components/GuestView";
 import Button from 'react-bootstrap/Button';
-import "./App.css";
+import Container from 'react-bootstrap/Container';
+import "../dapp/App.css";
 
 class App extends Component {
   state = {
@@ -19,46 +20,49 @@ class App extends Component {
         web3: contract.web3, 
         accounts: contract.accounts,
         contractApp: contract.flightSuretyApp,
-        contract,
-        connectedAccount: contract.connectedAccount
+        contract
       });
     } catch (error) {
-      // Catch any errors for any of the above operations.
-      // alert(
-      //   `Failed to load web3, accounts, or contract. Check console for details.`,
-      // );
       console.error(error);
     }
   };
 
   viewComponent = () => {
-    const { view, contract, connectedAccount } = this.state;
+    const { view, contract } = this.state;
 
     if (view === "guest") {
       return <GuestView />;
     } else if (view === "airline") {
-      return <AirlineView contract={contract} connectedAccount={connectedAccount}/>;
+      return <AirlineView contract={contract} modifyView={this.modifyView}/>;
     } else {
-      return <PassengerView contract={contract} connectedAccount={connectedAccount} />;
+      return <PassengerView contract={contract} modifyView={this.modifyView}/>;
     }
   }
 
-  buttonClick = (setView) => {
+  modifyView = (setView) => {
     this.setState({
       view: setView
     })
   }
 
   render() {
+    const { view } = this.state;
     if (!this.state.web3) {
       return <div>Loading Web3, accounts, and contract...</div>;
     } else {
       return (
         <div className="App">
-          <h1>Welcome to flight surety</h1>
-          <Button variant="primary" size="lg" onClick={() => this.buttonClick("airline")}> Join as Airline</Button>
-          <Button variant="primary" size="lg" onClick={() => this.buttonClick("passenger")}> Join as Passenger</Button>
-          {this.viewComponent()}
+          <Container>
+            {view === 'guest' ? (
+              <>
+                <h1>FlightBuddy</h1>
+                <Button variant="outline-dark" size="lg" onClick={() => this.modifyView("airline")}> Join as Airline</Button>
+                <Button variant="outline-dark" size="lg" onClick={() => this.modifyView("passenger")}> Join as Passenger</Button>
+              </> 
+              )
+            : 
+            this.viewComponent()}
+          </Container>
         </div>
       );
     }

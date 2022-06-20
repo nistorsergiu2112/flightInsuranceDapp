@@ -20,3 +20,58 @@
 .App-link {
   color: #09d3ac;
 }
+
+body {
+  background-image: url('flight.jpg'); /* Source: iStockPhoto */
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+h1 {
+  font-family: 'Ubuntu', sans-serif;
+  padding-bottom: 15px;
+}
+
+h2 {
+  padding: 10px;
+}
+
+.container {
+  margin-top: 400px;
+  background-color: white;
+  opacity: 0.75;
+  color: black;
+  padding: 40px;
+  -webkit-border-radius: 30px;
+  -moz-border-radius: 30px;
+  border-radius: 30px;
+}
+
+.top-20 {
+  margin-top: 20px;
+}
+
+h5 {
+  color: #999999;
+}
+
+section {
+  margin-bottom: 50px;
+}
+
+.field {
+  font-weight: bold;
+  text-align: right;
+}
+
+.field-value {
+  color: #0e7fa8;
+}
+
+label.form {
+  font-size: 14px;
+  margin-right: 20px;
+}
+input {
+  margin-right: 30px;
+}
